@@ -1,0 +1,6 @@
+R_DEF: Internal format may change without notice
+local
+string default_web_client_id
+string facebook_app_id
+string facebook_client_token
+string fb_login_protocol_scheme
