@@ -1,4 +1,4 @@
-com.example.authentication
+com.estholon.authentication
 string default_web_client_id
 string facebook_app_id
 string facebook_client_token

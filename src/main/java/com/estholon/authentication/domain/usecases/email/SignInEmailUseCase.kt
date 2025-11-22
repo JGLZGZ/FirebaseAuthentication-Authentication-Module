@@ -1,0 +1,5 @@
+package com.estholon.authentication.domain.usecases.email
+
+interface SignInEmailUseCase {
+    suspend operator fun invoke( email: String, password: String ) : Result<Unit>
+}

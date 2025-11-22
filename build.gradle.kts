@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.authentication"
+    namespace = "com.estholon.authentication"
     compileSdk = 36
 
     defaultConfig {
@@ -58,6 +58,13 @@ dependencies {
     // GOOGLE
     implementation (libs.googleid)
 
+    // TESTING
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.play.services.tasks)
+
 }

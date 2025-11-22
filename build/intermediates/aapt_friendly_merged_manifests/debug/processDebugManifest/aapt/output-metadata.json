@@ -4,7 +4,7 @@
     "type": "AAPT_FRIENDLY_MERGED_MANIFESTS",
     "kind": "Directory"
   },
-  "applicationId": "com.example.authentication",
+  "applicationId": "com.estholon.authentication",
   "variantName": "debug",
   "elements": [
     {
