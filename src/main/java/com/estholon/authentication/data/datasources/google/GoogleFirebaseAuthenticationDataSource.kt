@@ -32,14 +32,13 @@ import kotlin.coroutines.resume
 class GoogleFirebaseAuthenticationDataSource @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
     private val emailAuthenticationDataSource: EmailAuthenticationDataSource,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val credentialManager: CredentialManager
 ) : GoogleAuthenticationDataSource {
 
     companion object {
         private const val TAG = "FirebaseAuthDS"
     }
-
-    private val credentialManager = CredentialManager.create(context)
 
     // SIGN IN GOOGLE
 

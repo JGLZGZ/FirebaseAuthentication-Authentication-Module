@@ -1,0 +1,99 @@
+package com.estholon.authentication.data.datasources.yahoo
+
+import android.app.Activity
+import com.estholon.authentication.data.dtos.UserDto
+import com.google.android.gms.tasks.OnSuccessListener
+import com.google.android.gms.tasks.Task
+import com.google.firebase.auth.AuthResult
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.UserInfo
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.unmockkAll
+import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+
+class YahooFirebaseAuthenticationDataSourceTest {
+
+    private lateinit var firebaseAuth: FirebaseAuth
+    private lateinit var dataSource: YahooFirebaseAuthenticationDataSource
+
+    @Before
+    fun setup() {
+        firebaseAuth = mockk()
+        dataSource = YahooFirebaseAuthenticationDataSource(firebaseAuth)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
+
+    @Test
+    fun `signInYahoo returns user on pending result success`() = runTest {
+        // Given
+        val activity = mockk<Activity>()
+        val task = mockk<Task<AuthResult>>()
+        val authResult = mockk<AuthResult>()
+        val firebaseUser = mockk<FirebaseUser>()
+
+        every { firebaseAuth.pendingAuthResult } returns task
+        every { authResult.user } returns firebaseUser
+        every { firebaseUser.uid } returns "uid"
+        every { firebaseUser.email } returns null
+        every { firebaseUser.displayName } returns null
+        every { firebaseUser.phoneNumber } returns null
+
+        val successSlot = slot<OnSuccessListener<AuthResult>>()
+        every { task.addOnSuccessListener(capture(successSlot)) } answers {
+            successSlot.captured.onSuccess(authResult)
+            task
+        }
+        every { task.addOnFailureListener(any()) } returns task
+
+        // When
+        val result = dataSource.signInYahoo(activity)
+
+        // Then
+        assertTrue(result.isSuccess)
+        assertEquals("uid", result.getOrNull()?.uid)
+    }
+
+    @Test
+    fun `linkYahoo returns success when not linked`() = runTest {
+        // Given
+        val activity = mockk<Activity>()
+        val firebaseUser = mockk<FirebaseUser>()
+        every { firebaseAuth.currentUser } returns firebaseUser
+        every { firebaseUser.providerData } returns emptyList()
+
+        val task = mockk<Task<AuthResult>>()
+        val authResult = mockk<AuthResult>()
+
+        every { firebaseUser.startActivityForLinkWithProvider(activity, any()) } returns task
+        every { authResult.user } returns firebaseUser
+        every { firebaseUser.uid } returns "uid"
+        every { firebaseUser.email } returns null
+        every { firebaseUser.displayName } returns null
+        every { firebaseUser.phoneNumber } returns null
+
+        val successSlot = slot<OnSuccessListener<AuthResult>>()
+        every { task.addOnSuccessListener(capture(successSlot)) } answers {
+            successSlot.captured.onSuccess(authResult)
+            task
+        }
+        every { task.addOnFailureListener(any()) } returns task
+
+        // When
+        val result = dataSource.linkYahoo(activity)
+
+        // Then
+        assertTrue(result.isSuccess)
+    }
+}

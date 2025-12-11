@@ -77,11 +77,14 @@ import com.estholon.authentication.domain.usecases.yahoo.LinkYahooUseCase
 import com.estholon.authentication.domain.usecases.yahoo.LinkYahooUseCaseImpl
 import com.estholon.authentication.domain.usecases.yahoo.SignInYahooUseCase
 import com.estholon.authentication.domain.usecases.yahoo.SignInYahooUseCaseImpl
+import android.content.Context
+import androidx.credentials.CredentialManager
 import com.google.firebase.auth.FirebaseAuth
 import dagger.Binds
 import dagger.Provides
 import dagger.Module
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -329,6 +332,10 @@ abstract class FirebaseModule {
         @Provides
         @Singleton
         fun provideUserMapper(): UserMapper = UserMapper()
+
+        @Provides
+        @Singleton
+        fun provideCredentialManager(@ApplicationContext context: Context): CredentialManager = CredentialManager.create(context)
 
     }
 
