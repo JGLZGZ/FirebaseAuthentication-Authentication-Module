@@ -1,6 +1,7 @@
 package com.estholon.authentication.data.datasources.google;
 
 import android.content.Context;
+import androidx.credentials.CredentialManager;
 import com.estholon.authentication.data.datasources.email.EmailAuthenticationDataSource;
 import com.google.firebase.auth.FirebaseAuth;
 import dagger.internal.DaggerGenerated;
@@ -33,29 +34,33 @@ public final class GoogleFirebaseAuthenticationDataSource_Factory implements Fac
 
   private final Provider<Context> contextProvider;
 
+  private final Provider<CredentialManager> credentialManagerProvider;
+
   private GoogleFirebaseAuthenticationDataSource_Factory(
       Provider<FirebaseAuth> firebaseAuthProvider,
       Provider<EmailAuthenticationDataSource> emailAuthenticationDataSourceProvider,
-      Provider<Context> contextProvider) {
+      Provider<Context> contextProvider, Provider<CredentialManager> credentialManagerProvider) {
     this.firebaseAuthProvider = firebaseAuthProvider;
     this.emailAuthenticationDataSourceProvider = emailAuthenticationDataSourceProvider;
     this.contextProvider = contextProvider;
+    this.credentialManagerProvider = credentialManagerProvider;
   }
 
   @Override
   public GoogleFirebaseAuthenticationDataSource get() {
-    return newInstance(firebaseAuthProvider.get(), emailAuthenticationDataSourceProvider.get(), contextProvider.get());
+    return newInstance(firebaseAuthProvider.get(), emailAuthenticationDataSourceProvider.get(), contextProvider.get(), credentialManagerProvider.get());
   }
 
   public static GoogleFirebaseAuthenticationDataSource_Factory create(
       Provider<FirebaseAuth> firebaseAuthProvider,
       Provider<EmailAuthenticationDataSource> emailAuthenticationDataSourceProvider,
-      Provider<Context> contextProvider) {
-    return new GoogleFirebaseAuthenticationDataSource_Factory(firebaseAuthProvider, emailAuthenticationDataSourceProvider, contextProvider);
+      Provider<Context> contextProvider, Provider<CredentialManager> credentialManagerProvider) {
+    return new GoogleFirebaseAuthenticationDataSource_Factory(firebaseAuthProvider, emailAuthenticationDataSourceProvider, contextProvider, credentialManagerProvider);
   }
 
   public static GoogleFirebaseAuthenticationDataSource newInstance(FirebaseAuth firebaseAuth,
-      EmailAuthenticationDataSource emailAuthenticationDataSource, Context context) {
-    return new GoogleFirebaseAuthenticationDataSource(firebaseAuth, emailAuthenticationDataSource, context);
+      EmailAuthenticationDataSource emailAuthenticationDataSource, Context context,
+      CredentialManager credentialManager) {
+    return new GoogleFirebaseAuthenticationDataSource(firebaseAuth, emailAuthenticationDataSource, context, credentialManager);
   }
 }

@@ -2,8 +2,10 @@ package com.estholon.authentication.data.datasources.google
 
 import android.app.Activity
 import android.content.Context
+import android.os.CancellationSignal
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
 import androidx.credentials.PasswordCredential
 import com.estholon.authentication.data.datasources.email.EmailAuthenticationDataSource
@@ -17,13 +19,12 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.unmockkAll
-import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -65,7 +66,7 @@ class GoogleFirebaseAuthenticationDataSourceTest {
         val credentialResponse = mockk<GetCredentialResponse>()
         val customCredential = mockk<CustomCredential>()
 
-        coEvery { credentialManager.getCredential(any(), any()) } returns credentialResponse
+        coEvery { credentialManager.getCredential(any<Context>(), any<GetCredentialRequest>()) } returns credentialResponse
         every { credentialResponse.credential } returns customCredential
         every { customCredential.type } returns GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
 
