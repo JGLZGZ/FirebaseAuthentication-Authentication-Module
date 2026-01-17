@@ -11,6 +11,8 @@ import com.estholon.authentication.data.datasources.facebook.FacebookFirebaseAut
 import com.estholon.authentication.data.datasources.github.GitHubAuthenticationDataSource
 import com.estholon.authentication.data.datasources.github.GitHubFirebaseAuthenticationDataSource
 import com.estholon.authentication.data.datasources.google.GoogleAuthenticationDataSource
+import com.estholon.authentication.data.datasources.google.GoogleCredentialOptionsFactory
+import com.estholon.authentication.data.datasources.google.GoogleCredentialOptionsFactoryImpl
 import com.estholon.authentication.data.datasources.google.GoogleFirebaseAuthenticationDataSource
 import com.estholon.authentication.data.datasources.microsoft.MicrosoftAuthenticationDataSource
 import com.estholon.authentication.data.datasources.microsoft.MicrosoftFirebaseAuthenticationDataSource
@@ -115,6 +117,12 @@ abstract class FirebaseModule {
     abstract fun bindGoogleAuthenticationDataSource(
         googleFirebaseAuthenticationDataSource: GoogleFirebaseAuthenticationDataSource
     ): GoogleAuthenticationDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindGoogleCredentialOptionsFactory(
+        googleCredentialOptionsFactoryImpl: GoogleCredentialOptionsFactoryImpl
+    ): GoogleCredentialOptionsFactory
 
     @Binds
     @Singleton

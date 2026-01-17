@@ -6,7 +6,6 @@ import android.util.Log
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
-import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
 import androidx.credentials.PasswordCredential
 import androidx.credentials.PublicKeyCredential
@@ -15,8 +14,6 @@ import com.estholon.authentication.R
 import com.estholon.authentication.data.datasources.email.EmailAuthenticationDataSource
 import com.estholon.authentication.data.dtos.UserDto
 import com.estholon.authentication.data.mappers.toUserDto
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
-import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import com.google.firebase.auth.AuthCredential
@@ -33,7 +30,8 @@ class GoogleFirebaseAuthenticationDataSource @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
     private val emailAuthenticationDataSource: EmailAuthenticationDataSource,
     @ApplicationContext private val context: Context,
-    private val credentialManager: CredentialManager
+    private val credentialManager: CredentialManager,
+    private val credentialOptionsFactory: GoogleCredentialOptionsFactory
 ) : GoogleAuthenticationDataSource {
 
     companion object {
@@ -46,16 +44,14 @@ class GoogleFirebaseAuthenticationDataSource @Inject constructor(
         return try {
             val nonce = generateNonce()
 
-            val googleIdOption = GetGoogleIdOption.Builder()
-                .setFilterByAuthorizedAccounts(true)
-                .setServerClientId(context.getString(R.string.default_web_client_id))
-                .setAutoSelectEnabled(true)
-                .setNonce(nonce)
-                .build()
+            val googleIdOption = credentialOptionsFactory.createGoogleIdOption(
+                serverClientId = context.getString(R.string.default_web_client_id),
+                nonce = nonce,
+                filterByAuthorizedAccounts = true,
+                autoSelectEnabled = true
+            )
 
-            val request = GetCredentialRequest.Builder()
-                .addCredentialOption(googleIdOption)
-                .build()
+            val request = credentialOptionsFactory.createCredentialRequest(googleIdOption)
 
             try {
                 val result = credentialManager.getCredential(
@@ -76,15 +72,12 @@ class GoogleFirebaseAuthenticationDataSource @Inject constructor(
         return try {
             val nonce = generateNonce()
 
-            val signInWithGoogleOption = GetSignInWithGoogleOption.Builder(
-                serverClientId = context.getString(R.string.default_web_client_id)
+            val signInWithGoogleOption = credentialOptionsFactory.createSignInWithGoogleOption(
+                serverClientId = context.getString(R.string.default_web_client_id),
+                nonce = nonce
             )
-                .setNonce(nonce)
-                .build()
 
-            val request = GetCredentialRequest.Builder()
-                .addCredentialOption(signInWithGoogleOption)
-                .build()
+            val request = credentialOptionsFactory.createCredentialRequestWithSignIn(signInWithGoogleOption)
 
             val result = credentialManager.getCredential(
                 request = request,
@@ -111,7 +104,7 @@ class GoogleFirebaseAuthenticationDataSource @Inject constructor(
             is CustomCredential -> {
                 if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                     try {
-                        val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                        val googleIdTokenCredential = credentialOptionsFactory.parseGoogleIdTokenCredential(credential.data)
                         val idToken = googleIdTokenCredential.idToken
 
                         val userInfo = """
@@ -157,16 +150,14 @@ class GoogleFirebaseAuthenticationDataSource @Inject constructor(
             val nonce = generateNonce()
 
             // Try with allowed accounts
-            val googleIdOption = GetGoogleIdOption.Builder()
-                .setFilterByAuthorizedAccounts(true)
-                .setServerClientId(context.getString(R.string.default_web_client_id))
-                .setAutoSelectEnabled(false) // No auto-seleccionar para permitir elegir cuenta
-                .setNonce(nonce)
-                .build()
+            val googleIdOption = credentialOptionsFactory.createGoogleIdOption(
+                serverClientId = context.getString(R.string.default_web_client_id),
+                nonce = nonce,
+                filterByAuthorizedAccounts = true,
+                autoSelectEnabled = false
+            )
 
-            val request = GetCredentialRequest.Builder()
-                .addCredentialOption(googleIdOption)
-                .build()
+            val request = credentialOptionsFactory.createCredentialRequest(googleIdOption)
 
             try {
                 val result = credentialManager.getCredential(
@@ -184,7 +175,7 @@ class GoogleFirebaseAuthenticationDataSource @Inject constructor(
         }
     }
 
-    private fun generateNonce(): String {
+    internal fun generateNonce(): String {
         val random = SecureRandom()
         val bytes = ByteArray(32)
         random.nextBytes(bytes)
@@ -193,15 +184,14 @@ class GoogleFirebaseAuthenticationDataSource @Inject constructor(
 
     private suspend fun signUpWithCredentialManager(activity: Activity, nonce: String): Result<UserDto?> {
         return try {
-            val googleIdOption = GetGoogleIdOption.Builder()
-                .setFilterByAuthorizedAccounts(false)
-                .setServerClientId(context.getString(R.string.default_web_client_id))
-                .setNonce(nonce)
-                .build()
+            val googleIdOption = credentialOptionsFactory.createGoogleIdOption(
+                serverClientId = context.getString(R.string.default_web_client_id),
+                nonce = nonce,
+                filterByAuthorizedAccounts = false,
+                autoSelectEnabled = false
+            )
 
-            val request = GetCredentialRequest.Builder()
-                .addCredentialOption(googleIdOption)
-                .build()
+            val request = credentialOptionsFactory.createCredentialRequest(googleIdOption)
 
             val result = credentialManager.getCredential(
                 request = request,
@@ -213,12 +203,12 @@ class GoogleFirebaseAuthenticationDataSource @Inject constructor(
         }
     }
 
-    private suspend fun signInWithGoogleIdToken(idToken: String): Result<UserDto?> {
+    internal suspend fun signInWithGoogleIdToken(idToken: String): Result<UserDto?> {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         return completeRegisterWithCredential(credential)
     }
 
-    private suspend fun completeRegisterWithCredential(credential: AuthCredential): Result<UserDto?> {
+    internal suspend fun completeRegisterWithCredential(credential: AuthCredential): Result<UserDto?> {
         return suspendCancellableCoroutine { cancellableContinuation ->
             firebaseAuth.signInWithCredential(credential)
                 .addOnSuccessListener {
@@ -236,7 +226,7 @@ class GoogleFirebaseAuthenticationDataSource @Inject constructor(
         }
     }
 
-    private suspend fun handleCredentialResponseForLinking(
+    internal suspend fun handleCredentialResponseForLinking(
         result: GetCredentialResponse,
         currentUser: FirebaseUser
     ): Result<UserDto?> {
@@ -246,7 +236,7 @@ class GoogleFirebaseAuthenticationDataSource @Inject constructor(
             is CustomCredential -> {
                 if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                     try {
-                        val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                        val googleIdTokenCredential = credentialOptionsFactory.parseGoogleIdTokenCredential(credential.data)
                         val idToken = googleIdTokenCredential.idToken
 
                         val userInfo = """
@@ -271,7 +261,7 @@ class GoogleFirebaseAuthenticationDataSource @Inject constructor(
         }
     }
 
-    private suspend fun linkWithGoogleIdToken(currentUser: FirebaseUser, idToken: String): Result<UserDto?> {
+    internal suspend fun linkWithGoogleIdToken(currentUser: FirebaseUser, idToken: String): Result<UserDto?> {
         return suspendCancellableCoroutine { cancellableContinuation ->
             // Create credential with token
             val credential = GoogleAuthProvider.getCredential(idToken, null)
@@ -301,15 +291,14 @@ class GoogleFirebaseAuthenticationDataSource @Inject constructor(
         nonce: String
     ): Result<UserDto?> {
         return try {
-            val googleIdOption = GetGoogleIdOption.Builder()
-                .setFilterByAuthorizedAccounts(false) // Permitir todas las cuentas
-                .setServerClientId(context.getString(R.string.default_web_client_id))
-                .setNonce(nonce)
-                .build()
+            val googleIdOption = credentialOptionsFactory.createGoogleIdOption(
+                serverClientId = context.getString(R.string.default_web_client_id),
+                nonce = nonce,
+                filterByAuthorizedAccounts = false,
+                autoSelectEnabled = false
+            )
 
-            val request = GetCredentialRequest.Builder()
-                .addCredentialOption(googleIdOption)
-                .build()
+            val request = credentialOptionsFactory.createCredentialRequest(googleIdOption)
 
             val result = credentialManager.getCredential(
                 request = request,
