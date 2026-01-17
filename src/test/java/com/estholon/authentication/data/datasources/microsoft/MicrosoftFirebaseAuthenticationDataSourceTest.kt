@@ -1,6 +1,7 @@
 package com.estholon.authentication.data.datasources.microsoft
 
 import android.app.Activity
+import android.util.Log
 import com.estholon.authentication.data.dtos.UserDto
 import com.google.android.gms.tasks.OnFailureListener
 import com.google.android.gms.tasks.OnSuccessListener
@@ -8,9 +9,11 @@ import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.OAuthProvider
 import com.google.firebase.auth.UserInfo
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
@@ -27,6 +30,20 @@ class MicrosoftFirebaseAuthenticationDataSourceTest {
 
     @Before
     fun setup() {
+        // Mock Android Log
+        mockkStatic(Log::class)
+        every { Log.d(any(), any()) } returns 0
+        every { Log.e(any(), any()) } returns 0
+        every { Log.e(any(), any(), any()) } returns 0
+
+        // Mock OAuthProvider.newBuilder() static method
+        mockkStatic(OAuthProvider::class)
+        val mockBuilder = mockk<OAuthProvider.Builder>(relaxed = true)
+        val mockProvider = mockk<OAuthProvider>()
+        every { OAuthProvider.newBuilder(any<String>()) } returns mockBuilder
+        every { mockBuilder.setScopes(any()) } returns mockBuilder
+        every { mockBuilder.build() } returns mockProvider
+
         firebaseAuth = mockk()
         dataSource = MicrosoftFirebaseAuthenticationDataSource(firebaseAuth)
     }

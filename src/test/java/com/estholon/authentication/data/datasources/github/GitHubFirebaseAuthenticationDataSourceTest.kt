@@ -1,6 +1,7 @@
 package com.estholon.authentication.data.datasources.github
 
 import android.app.Activity
+import android.util.Log
 import com.estholon.authentication.data.dtos.UserDto
 import com.google.android.gms.tasks.OnFailureListener
 import com.google.android.gms.tasks.OnSuccessListener
@@ -28,6 +29,20 @@ class GitHubFirebaseAuthenticationDataSourceTest {
 
     @Before
     fun setup() {
+        // Mock Android Log
+        mockkStatic(Log::class)
+        every { Log.d(any(), any()) } returns 0
+        every { Log.e(any(), any()) } returns 0
+        every { Log.e(any(), any(), any()) } returns 0
+
+        // Mock OAuthProvider.newBuilder() static method
+        mockkStatic(OAuthProvider::class)
+        val mockBuilder = mockk<OAuthProvider.Builder>(relaxed = true)
+        val mockProvider = mockk<OAuthProvider>()
+        every { OAuthProvider.newBuilder(any<String>()) } returns mockBuilder
+        every { mockBuilder.setScopes(any()) } returns mockBuilder
+        every { mockBuilder.build() } returns mockProvider
+
         firebaseAuth = mockk()
         dataSource = GitHubFirebaseAuthenticationDataSource(firebaseAuth)
     }
