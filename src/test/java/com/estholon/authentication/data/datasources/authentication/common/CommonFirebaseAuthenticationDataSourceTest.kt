@@ -1,4 +1,4 @@
-package com.estholon.firebaseauthentication.data.datasources.authentication.common
+package com.estholon.authentication.data.datasources.authentication.common
 
 import com.estholon.authentication.data.datasources.common.CommonFirebaseAuthenticationDataSource
 import com.estholon.authentication.data.datasources.google.GoogleAuthenticationDataSource
