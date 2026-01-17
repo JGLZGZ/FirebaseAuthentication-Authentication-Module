@@ -18,6 +18,8 @@ import com.estholon.authentication.data.datasources.microsoft.MicrosoftAuthentic
 import com.estholon.authentication.data.datasources.microsoft.MicrosoftFirebaseAuthenticationDataSource
 import com.estholon.authentication.data.datasources.multifactor.MultifactorAuthenticationDataSource
 import com.estholon.authentication.data.datasources.multifactor.MultifactorFirebaseAuthenticationDataSource
+import com.estholon.authentication.data.datasources.multifactor.PhoneAuthOptionsFactory
+import com.estholon.authentication.data.datasources.multifactor.PhoneAuthOptionsFactoryImpl
 import com.estholon.authentication.data.datasources.phone.PhoneAuthenticationDataSource
 import com.estholon.authentication.data.datasources.phone.PhoneFirebaseAuthenticationDataSource
 import com.estholon.authentication.data.datasources.twitter.TwitterAuthenticationDataSource
@@ -123,6 +125,12 @@ abstract class FirebaseModule {
     abstract fun bindGoogleCredentialOptionsFactory(
         googleCredentialOptionsFactoryImpl: GoogleCredentialOptionsFactoryImpl
     ): GoogleCredentialOptionsFactory
+
+    @Binds
+    @Singleton
+    abstract fun bindPhoneAuthOptionsFactory(
+        phoneAuthOptionsFactoryImpl: PhoneAuthOptionsFactoryImpl
+    ): PhoneAuthOptionsFactory
 
     @Binds
     @Singleton

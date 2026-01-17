@@ -4,9 +4,7 @@ import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.MultiFactorSession
 import com.google.firebase.auth.PhoneAuthCredential
-import com.google.firebase.auth.PhoneAuthOptions
 import com.google.firebase.auth.PhoneAuthProvider
-import com.google.firebase.auth.PhoneMultiFactorGenerator
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import java.util.concurrent.TimeUnit
@@ -15,7 +13,8 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 class MultifactorFirebaseAuthenticationDataSource @Inject constructor(
-    private val firebaseAuth: FirebaseAuth
+    private val firebaseAuth: FirebaseAuth,
+    private val phoneAuthOptionsFactory: PhoneAuthOptionsFactory
 ): MultifactorAuthenticationDataSource {
 
     override suspend fun getMultifactorSession(): MultiFactorSession {
@@ -30,23 +29,20 @@ class MultifactorFirebaseAuthenticationDataSource @Inject constructor(
         sendSmsForEnroll(session,phoneNumber)
     }
 
-    suspend fun sendSmsForEnroll(
+    internal suspend fun sendSmsForEnroll(
         session: MultiFactorSession,
         phoneNumber: String,
     ) = suspendCancellableCoroutine<String> { continuation ->
-//        firebaseAuth.currentUser?.isEmailVerified?.let { emailVerified ->
-//            if (emailVerified) {
         val callback = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
             override fun onCodeSent(
                 verificationId: String,
                 token: PhoneAuthProvider.ForceResendingToken
             ) {
-                // Handle code sent
                 continuation.resume(verificationId)
             }
 
             override fun onVerificationCompleted(credential: PhoneAuthCredential) {
-                // Handle verification completed
+                // Auto-verification completed - not used for MFA enrollment
             }
 
             override fun onVerificationFailed(p0: FirebaseException) {
@@ -54,18 +50,16 @@ class MultifactorFirebaseAuthenticationDataSource @Inject constructor(
             }
         }
 
-        val option = PhoneAuthOptions.newBuilder(firebaseAuth)
-            .setPhoneNumber(phoneNumber)
-            .setTimeout(60, TimeUnit.SECONDS)
-            .setMultiFactorSession(session)
-            .setCallbacks(callback)
-            .build()
+        val options = phoneAuthOptionsFactory.createPhoneAuthOptions(
+            firebaseAuth = firebaseAuth,
+            phoneNumber = phoneNumber,
+            timeout = 60,
+            timeUnit = TimeUnit.SECONDS,
+            session = session,
+            callbacks = callback
+        )
 
-        PhoneAuthProvider.verifyPhoneNumber(option)
-//            } else {
-//                continuation.resumeWithException(Exception("Email not verified"))
-//            }
-//        } ?: continuation.resumeWithException(Exception("No authenticated user"))
+        phoneAuthOptionsFactory.verifyPhoneNumber(options)
     }
 
 
@@ -73,8 +67,8 @@ class MultifactorFirebaseAuthenticationDataSource @Inject constructor(
         verificationId: String,
         verificationCode: String
     ): Result<Unit> = runCatching {
-        val phoneProvider = PhoneAuthProvider.getCredential(verificationId, verificationCode)
-        val multiFactorAssertion = PhoneMultiFactorGenerator.getAssertion(phoneProvider)
+        val credential = phoneAuthOptionsFactory.getCredential(verificationId, verificationCode)
+        val multiFactorAssertion = phoneAuthOptionsFactory.getMultiFactorAssertion(credential)
         firebaseAuth.currentUser?.multiFactor?.enroll(multiFactorAssertion, "Personal number")
             ?.await()
     }
