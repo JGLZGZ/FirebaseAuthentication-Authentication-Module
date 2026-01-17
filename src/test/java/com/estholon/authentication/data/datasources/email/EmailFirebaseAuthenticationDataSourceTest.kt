@@ -194,4 +194,159 @@ class EmailFirebaseAuthenticationDataSourceTest {
         // Then
         assertTrue(result.isSuccess)
     }
+
+    @Test
+    fun `signUpEmail returns failure when user is null`() = runTest {
+        // Given
+        val task = mockk<Task<AuthResult>>()
+        val authResult = mockk<AuthResult>()
+
+        every { firebaseAuth.createUserWithEmailAndPassword(any(), any()) } returns task
+        every { authResult.user } returns null
+
+        val successSlot = slot<OnSuccessListener<AuthResult>>()
+        every { task.addOnSuccessListener(capture(successSlot)) } answers {
+            successSlot.captured.onSuccess(authResult)
+            task
+        }
+        every { task.addOnFailureListener(any()) } returns task
+
+        // When
+        val result = dataSource.signUpEmail("test@test.com", "password")
+
+        // Then
+        assertTrue(result.isFailure)
+        assertEquals("Error al iniciar sesión", result.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun `signInEmail returns failure when error`() = runTest {
+        // Given
+        val task = mockk<Task<AuthResult>>()
+        val exception = Exception("Sign in failed")
+
+        every { firebaseAuth.signInWithEmailAndPassword(any(), any()) } returns task
+
+        every { task.addOnSuccessListener(any()) } returns task
+        val failureSlot = slot<OnFailureListener>()
+        every { task.addOnFailureListener(capture(failureSlot)) } answers {
+            failureSlot.captured.onFailure(exception)
+            task
+        }
+
+        // When
+        val result = dataSource.signInEmail("test@test.com", "password")
+
+        // Then
+        assertTrue(result.isFailure)
+        assertEquals("Sign in failed", result.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun `signInEmail returns failure when user is null`() = runTest {
+        // Given
+        val task = mockk<Task<AuthResult>>()
+        val authResult = mockk<AuthResult>()
+
+        every { firebaseAuth.signInWithEmailAndPassword(any(), any()) } returns task
+        every { authResult.user } returns null
+
+        val successSlot = slot<OnSuccessListener<AuthResult>>()
+        every { task.addOnSuccessListener(capture(successSlot)) } answers {
+            successSlot.captured.onSuccess(authResult)
+            task
+        }
+        every { task.addOnFailureListener(any()) } returns task
+
+        // When
+        val result = dataSource.signInEmail("test@test.com", "password")
+
+        // Then
+        assertTrue(result.isFailure)
+        assertEquals("Error al iniciar sesión", result.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun `linkEmail returns failure when linked user is null`() = runTest {
+        // Given
+        val firebaseUser = mockk<FirebaseUser>()
+        every { firebaseAuth.currentUser } returns firebaseUser
+
+        mockkStatic(EmailAuthProvider::class)
+        val credential = mockk<AuthCredential>()
+        every { EmailAuthProvider.getCredential(any(), any()) } returns credential
+
+        val task = mockk<Task<AuthResult>>()
+        val authResult = mockk<AuthResult>()
+
+        every { firebaseUser.linkWithCredential(any()) } returns task
+        every { authResult.user } returns null
+
+        val successSlot = slot<OnSuccessListener<AuthResult>>()
+        every { task.addOnSuccessListener(capture(successSlot)) } answers {
+            successSlot.captured.onSuccess(authResult)
+            task
+        }
+        every { task.addOnFailureListener(any()) } returns task
+
+        // When
+        val result = dataSource.linkEmail("test@test.com", "password")
+
+        // Then
+        assertTrue(result.isFailure)
+        assertEquals("Error al vincular cuenta de email", result.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun `linkEmail returns failure on exception`() = runTest {
+        // Given
+        val firebaseUser = mockk<FirebaseUser>()
+        every { firebaseAuth.currentUser } returns firebaseUser
+
+        mockkStatic(EmailAuthProvider::class)
+        val credential = mockk<AuthCredential>()
+        every { EmailAuthProvider.getCredential(any(), any()) } returns credential
+
+        val task = mockk<Task<AuthResult>>()
+        val exception = Exception("Link failed")
+
+        every { firebaseUser.linkWithCredential(any()) } returns task
+
+        every { task.addOnSuccessListener(any()) } returns task
+        val failureSlot = slot<OnFailureListener>()
+        every { task.addOnFailureListener(capture(failureSlot)) } answers {
+            failureSlot.captured.onFailure(exception)
+            task
+        }
+
+        // When
+        val result = dataSource.linkEmail("test@test.com", "password")
+
+        // Then
+        assertTrue(result.isFailure)
+        assertEquals("Link failed", result.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun `resetPassword returns failure on exception`() = runTest {
+        // Given
+        val task = mockk<Task<Void>>()
+        val exception = Exception("Reset failed")
+
+        every { firebaseAuth.sendPasswordResetEmail(any()) } returns task
+
+        every { task.addOnSuccessListener(any()) } returns task
+        val failureSlot = slot<OnFailureListener>()
+        every { task.addOnFailureListener(capture(failureSlot)) } answers {
+            failureSlot.captured.onFailure(exception)
+            task
+        }
+
+        // When
+        val result = dataSource.resetPassword("test@test.com")
+
+        // Then
+        assertTrue(result.isFailure)
+        assertEquals("Reset failed", result.exceptionOrNull()?.message)
+    }
 }
